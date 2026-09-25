@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>crarrar // Production Operator Matrix</title>
+    <script src="https://tailwindcss.com"></script>
+    <!-- Stripe Object Ingestion Framework -->
+    <script src="https://stripe.com"></script>
+    <script src="https://jsdelivr.net"></script>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 font-sans h-screen flex flex-col selection:bg-rose-500 selection:text-white">
+
+    <!-- Top Management Console -->
+    <header class="border-b border-slate-800 bg-[#0f172a] px-6 py-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="h-3 w-3 rounded-full bg-rose-500 animate-pulse"></div>
+            <h1 class="text-xl font-mono font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">
+                crarrar_core
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-mono">
+            <button onclick="toggleModal('pricing-modal')" class="text-slate-300 hover:text-white transition cursor-pointer px-3 py-1.5 rounded border border-slate-700 bg-slate-800/40">
+                💰 Pricing Plans
+            </button>
+            <button id="portal-btn" onclick="openCustomerPortal()" class="hidden text-amber-400 hover:text-amber-300 transition cursor-pointer px-3 py-1.5 rounded border border-amber-500/30 bg-amber-950/20">
+                ⚙️ Manage Subscription
+            </button>
+            <button id="auth-btn" onclick="toggleModal('auth-modal')" class="bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold px-4 py-1.5 rounded-lg hover:from-rose-500 hover:to-amber-500 transition cursor-pointer">
+                Sign In
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main id="chat-container" class="flex-1 overflow-y-auto px-4 py-6 md:px-24 lg:px-64 space-y-6">
+        <div class="flex items-start gap-4 p-4 rounded-xl border border-slate-800/60 bg-[#0f172a]/40">
+            <div class="bg-rose-950 border border-rose-500/30 text-rose-400 p-2 rounded-lg font-mono text-xs font-bold">CR</div>
+            <div class="space-y-1">
+                <p class="text-sm font-semibold text-slate-200">crarrar system node</p>
+                <p id="system-status-text" class="text-sm text-slate-400">System validated. Unidentified operator state: Free tier rate limits strictly applied.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Command Console -->
+    <footer class="border-t border-slate-800/80 bg-[#0f172a]/80 px-4 py-4 md:px-24 lg:px-64">
+        <form id="chat-form" class="relative flex items-center bg-[#0b0f19] border border-slate-800 rounded-xl p-2">
+            <textarea id="user-input" rows="1" placeholder="Query the crarrar layer..." class="flex-1 bg-transparent outline-none text-sm px-3 text-slate-200 resize-none" required></textarea>
+            <button type="submit" class="bg-rose-600 text-white font-mono text-xs font-bold px-4 py-2 rounded-lg hover:bg-rose-500 transition cursor-pointer">Execute</button>
+        </form>
+    </footer>
+
+    <!-- MODAL: Sign In -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-[#0f172a] border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold font-mono text-slate-200 mb-4">Identify Operator</h3>
+            <form onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Email Endpoint Address</label>
+                    <input type="email" id="auth-email" required placeholder="name@domain.com" class="w-full bg-[#0b0f19] border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-rose-500">
+                </div>
+                <button type="submit" class="w-full bg-rose-600 text-sm font-bold py-2 rounded-lg hover:bg-rose-500 transition cursor-pointer">Establish Session</button>
+            </form>
+            <button onclick="toggleModal('auth-modal')" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 font-mono text-sm cursor-pointer">✕</button>
+        </div>
+    </div>
+
+    <!-- MODAL: Pricing Tiers -->
+    <div id="pricing-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-[#0f172a] border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative">
+            <h3 class="text-xl font-bold font-mono text-center text-slate-200 mb-2">Compute Tiers</h3>
+            <p class="text-xs text-slate-400 text-center mb-6">Select a routing tier layer handled via secure Stripe production channels.</p>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <!-- Free Tier Card -->
+                <div class="border border-slate-800 bg-[#0b0f19] rounded-xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h4 class="font-mono text-sm font-bold text-slate-400">Free Tier Blueprint</h4>
+                        <div class="text-2xl font-bold my-2">$0 <span class="text-xs text-slate-500 font-normal">/ mo</span></div>
+                        <ul class="text-xs text-slate-400 space-y-2 mt-4">
+                            <li>✓ 100 queries per day baseline</li>
+                            <li>✓ Standard model attention nodes</li>
+                        </ul>
+                    </div>
+                    <button class="w-full mt-6 bg-slate-800 text-xs font-bold py-2 rounded-lg cursor-not-allowed text-slate-500" disabled>Baseline Active</button>
+                </div>
+                <!-- Pro Tier Card -->
+                <div class="border border-rose-500/30 bg-[#0b0f19] rounded-xl p-5 flex flex-col justify-between relative shadow-lg">
+                    <span class="absolute -top-2.5 right-4 bg-gradient-to-r from-rose-600 to-amber-500 text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded text-white tracking-widest">Accelerated</span>
+                    <div>
+                        <h4 class="font-mono text-sm font-bold text-rose-400">Pro Operator</h4>
+                        <div class="text-2xl font-bold my-2">$49 <span class="text-xs text-slate-500 font-normal">/ mo</span></div>
+                        <ul class="text-xs text-slate-400 space-y-2 mt-4">
+                            <li>✓ 10,000 queries per day allotment</li>
+                            <li>✓ Dynamic Sparse MoE Network Nodes</li>
+                            <li>✓ Priority GPU context queuing</li>
+                        </ul>
+                    </div>
+                    <button id="upgrade-btn" onclick="checkout('prod_pro_888')" class="w-full mt-6 bg-gradient-to-r from-rose-600 to-rose-500 text-xs font-bold py-2 rounded-lg hover:from-rose-500 hover:to-amber-500 transition cursor-pointer text-white">Upgrade via Stripe</button>
+                </div>
+            </div>
+            <button onclick="toggleModal('pricing-modal')" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 font-mono text-sm cursor-pointer">✕</button>
+        </div>
+    </div>
+
+    <script>
+        // Secure Instantiation of production token engine link
+        const stripe = Stripe('pk_live_51UJECdKEqJZY3CRQWWFJx3Lq7sMfQB36SGFHN2ILIl45kyjv3RHv3jEPck2mXtcov6e2ywolyamfdscCr0E2ftwr00SCrvrDVs');
+
+        function toggleModal(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            try {
+                const res = await fetch('/v1/auth/session', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: email })
+                });
+                const userSession = await res.json();
+                
+                localStorage.setItem('crarrar_user', email);
+                localStorage.setItem('crarrar_tier', userSession.tier);
+                updateUIState(email, userSession.tier);
+                toggleModal('auth-modal');
+            } catch (err) {
+                alert("Session handshaking error.");
+            }
+        }
+
+        function updateUIState(email, tier) {
+            if(!email) return;
+            document.getElementById('auth-btn').innerText = `ID: ${email.split('@')[0]}`;
+            const statusText = document.getElementById('system-status-text');
+            const portalBtn = document.getElementById('portal-btn');
+            const upgradeBtn = document.getElementById('upgrade-btn');
+
+            if(tier === 'PRO_TIER') {
+                statusText.innerText = "Compute matrix optimized. Pro Account Active: Token generation running unthrottled.";
+                statusText.className = "text-sm text-amber-400 font-semibold";
+                portalBtn.classList.remove('hidden');
+                upgradeBtn.innerText = "Active Subscription";
+                upgradeBtn.className = "w-full mt-6 bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 text-xs font-bold py-2 rounded-lg cursor-not-allowed";
+                upgradeBtn.disabled = true;
+            } else {
+                statusText.innerText = "Session validated. Free tier rate limits strictly applied.";
+                statusText.className = "text-sm text-slate-400";
+                portalBtn.classList.add('hidden');
+            }
+        }
+
+        async function checkout(productId) {
+            const email = localStorage.getItem('crarrar_user');
+            if(!email) {
+                toggleModal('pricing-modal');
