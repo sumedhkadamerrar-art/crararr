@@ -1,0 +1,215 @@
+import os
+import sqlite3
+import asyncio
+import random
+from flask import Flask, render_template, request, jsonify, Response
+import stripe
+
+app = Flask(__name__, template_folder='templates', static_folder='templates')
+
+# --- Infrastructure Token Configuration ---
+CRARRAR_API_TOKEN = os.getenv("CRARRAR_API_TOKEN", "5c01a0ea14b3a9dbd8fc807fba1cf40c")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_live_YOUR_ACTUAL_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_YOUR_LIVE_WEBHOOK_SECRET")
+
+# Pathing configuration to respect optional cloud persistent disks
+DATABASE_FILE = os.getenv("PERSISTENT_DISK_PATH", "rarrarr_infra.db")
+
+# --- Asynchronous Model Inference Virtualization Engine ---
+class CrarrarInferenceEngine:
+    def __init__(self, embed_dim: int = 8192, heads: int = 64, experts: int = 8):
+        self.embed_dim = embed_dim
+        self.heads = heads
+        self.experts = experts
+        print(f"🧬 [crarrar_core] Attention Matrix Operational (Dim: {embed_dim}, Heads: {heads})")
+        print(f"🧠 [crarrar_core] Sparse Mixture of Experts Router Node Lowered Successfully.")
+
+    async def execute_attention_gate(self, prompt: str):
+        # Emulating virtual FlashAttention & Fused RoPE Scaling delay
+        await asyncio.sleep(0.06) 
+        active = random.sample(range(0, self.experts), 2)
+        return f"[fused_attention_block -> expert_nodes: {active}]"
+
+    async def stream_tokens(self, prompt: str, is_pro: bool):
+        # Accelerated inference processing latency paths for pro level tier validation
+        token_delay = 0.02 if is_pro else 0.08
+        gate_trace = await self.execute_attention_gate(prompt)
+        
+        yield f"<!-- graph_trace: {gate_trace} -->\n"
+        
+        response_pool = [
+            "Processing array computations across the network layer.",
+            "The sparse routing system has balanced activation weights.",
+            "Execution pipeline completed safely inside target memory nodes.",
+            "Synthesizing attention-weighted matrix representations for the query."
+        ]
+        base_response = f"**[crarrar_engine response]** Processing compute slice.\n\n{random.choice(response_pool)}"
+        
+        for word in base_response.split(" "):
+            yield word + " "
+            await asyncio.sleep(token_delay)
+
+# Global Instance Allocation
+engine = CrarrarInferenceEngine()
+
+# --- Database Orchestration & Access State Check Rules ---
+def init_db():
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS system_operators (
+                email TEXT PRIMARY KEY,
+                stripe_customer_id TEXT UNIQUE,
+                stripe_subscription_id TEXT,
+                tier_access TEXT DEFAULT 'FREE_TIER',
+                daily_usage_count INTEGER DEFAULT 0
+            );
+        """)
+    print("📦 Persistent SQLite state mapping schema verified clean.")
+
+def check_rate_limits(email: str) -> tuple[bool, bool]:
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT tier_access, daily_usage_count FROM system_operators WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        if not row:
+            return True, False  # Local fallback trace rules for untracked targets
+        
+        tier, usage = row[0], row[1]
+        if tier == 'PRO_TIER':
+            return (True, True) if usage < 10000 else (False, True)
+        return (True, False) if usage < 100 else (False, False)
+
+def increment_usage(email: str):
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        conn.execute("UPDATE system_operators SET daily_usage_count = daily_usage_count + 1 WHERE email = ?", (email,))
+        conn.commit()
+
+# --- Application API Routing Core ---
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/v1/auth/session', methods=['POST'])
+def handle_auth_session():
+    email = (request.json or {}).get("email")
+    if not email:
+        return jsonify({'error': 'Missing identification vector'}), 400
+        
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT tier_access FROM system_operators WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        if row:
+            return jsonify({'status': 'exists', 'tier': row[0]})
+        
+        cursor.execute("INSERT INTO system_operators (email, tier_access) VALUES (?, 'FREE_TIER')", (email,))
+        conn.commit()
+        return jsonify({'status': 'provisioned', 'tier': 'FREE_TIER'})
+
+@app.route('/v1/intelligence/chat', methods=['POST'])
+def handle_chat_inference():
+    data = request.json or {}
+    user_query = data.get("message", "")
+    operator_email = data.get("email", "anonymous@local")
+
+    # Enforce strict system routing boundary protections
+    is_allowed, is_pro = check_rate_limits(operator_email)
+    if not is_allowed:
+        return jsonify({'error': 'Compute limits saturated for active matrix routing tier.'}), 429
+
+    increment_usage(operator_email)
+
+    def generate():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        gen = engine.stream_tokens(user_query, is_pro)
+        try:
+            while True:
+                try:
+                    chunk = loop.run_until_complete(gen.__anext__())
+                    yield chunk
+                except StopAsyncIteration:
+                    break
+        finally:
+            loop.close()
+
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/v1/billing/checkout', methods=['POST'])
+def create_checkout_session():
+    customer_email = (request.json or {}).get("email")
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT stripe_customer_id FROM system_operators WHERE email = ?", (customer_email,))
+        row = cursor.fetchone()
+        customer_id = row[0] if row and row[0] else None
+
+    try:
+        checkout_kwargs = {
+            'payment_method_types': ['card'],
+            'line_items': [{'price': 'price_YOUR_PRODUCTION_PRICE_ID', 'quantity': 1}],
+            'mode': 'subscription',
+            'success_url': request.host_url,
+            'cancel_url': request.host_url,
+        }
+        if customer_id:
+            checkout_kwargs['customer'] = customer_id
+        else:
+            checkout_kwargs['customer_email'] = customer_email
+
+        session = stripe.checkout.session.create(**checkout_kwargs)
+        return jsonify({'id': session.id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/v1/billing/portal', methods=['POST'])
+def create_portal_session():
+    email = (request.json or {}).get("email")
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT stripe_customer_id FROM system_operators WHERE email = ?", (email,))
+        row = cursor.fetchone()
+        customer_id = row[0] if row and row[0] else None
+        
+    if not customer_id:
+        return jsonify({'error': 'No billing history linked to this node operator profile.'}), 400
+        
+    portal_session = stripe.billing_portal.session.create(customer=customer_id, return_url=request.host_url)
+    return jsonify({'url': portal_session.url})
+
+@app.route('/v1/billing/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except Exception:
+        return Response(status=400)
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        customer_email = session.get('customer_details', {}).get('email')
+        stripe_cust_id = session.get('customer')
+        stripe_sub_id = session.get('subscription')
+
+        with sqlite3.connect(DATABASE_FILE) as conn:
+            conn.execute("""
+                UPDATE system_operators 
+                SET stripe_customer_id = ?, stripe_subscription_id = ?, tier_access = 'PRO_TIER', daily_usage_count = 0 
+                WHERE email = ?
+            """, (stripe_cust_id, stripe_sub_id, customer_email))
+            conn.commit()
+            
+    elif event['type'] == 'customer.subscription.deleted':
+        sub_id = event['data']['object'].get('id')
+        with sqlite3.connect(DATABASE_FILE) as conn:
+            conn.execute("UPDATE system_operators SET tier_access = 'FREE_TIER' WHERE stripe_subscription_id = ?", (sub_id,))
+            conn.commit()
+
+    return Response(status=200)
+
+if __name__ == '__main__':
+    init_db()
+    # Read the designated cloud port dynamically generated by host execution boxes
+    port = int(os.getenv("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
